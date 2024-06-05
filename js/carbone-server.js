@@ -27,10 +27,14 @@ app.get('/', function(request, response) {
   response.end(html);
 })
 
-app.post('/', function(request, response) {
-  
+app.post('/', async function(request, response) {
   template = request.body.template;
   filename = template.replace(/^.*[\\\/]/, '');    //extract template filename to use as download file name
+  console.log(`start gen. template: ${template}, filename: ${filename}`)
+  if (template.startsWith(/http.[s]:\/\//)) {
+    filename = '/data/' + template.substring(template.lastIndexOf('/') + 1)
+    await downloadFile(template, filename)
+  }
   data = JSON.parse(request.body.json);
   options = JSON.parse(request.body.options);
 
@@ -49,4 +53,27 @@ app.post('/', function(request, response) {
     response.send(result);
   });
 });
+
+async function downloadFile(url, destinationPath) {
+  try {
+    // 发送GET请求
+    const response = await fetch(url);
+    if (!response.ok ) {
+      throw new Error(`HTTP error! Status: ${response.status }`);
+    }
+    // 获取响应体作为流
+    const body = response.body ;
+    // 将流转换为Node.js 的fs流
+    const reader = body.getReader ();
+    const writer = fs.createWriteStream (destinationPath);
+    for (;;) {
+      const { done, value } = await reader.read ();
+      if (done) break;
+      writer.write (value);
+    }
+    console.log ('File downloaded and saved');
+  } catch (error) {
+    console.error ('An error occurred:', error);
+  }
+}
 
