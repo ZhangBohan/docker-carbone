@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y libreoffice libreoffice-script-provider
 
 WORKDIR /home/node
 
-RUN npm install carbone@$CARBONE_VERSION express
+RUN npm install carbone@$CARBONE_VERSION express axios
 
 COPY js/* /home/node/
 
