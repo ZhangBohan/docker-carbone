@@ -37,7 +37,7 @@ app.post('/', async function(request, response) {
   let templateFilePath = template
   if (template.startsWith('http')) {
     filename = template.substring(template.lastIndexOf('/') + 1)
-    templateFilePath = './data/' + filename
+    templateFilePath = '/data/' + filename
     await downloadFile(templateFilePath, filename)
   }
   data = JSON.parse(request.body.json);
