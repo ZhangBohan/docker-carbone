@@ -1,6 +1,9 @@
 const carbone = require('carbone');
 const express = require('express');
+const axios = require('axios')
+const fs = require('fs');
 const app = express();
+
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({limit: '50mb'}));
@@ -28,12 +31,14 @@ app.get('/', function(request, response) {
 })
 
 app.post('/', async function(request, response) {
-  template = request.body.template;
-  filename = template.replace(/^.*[\\\/]/, '');    //extract template filename to use as download file name
+  const template = request.body.template;
+  let filename = template.replace(/^.*[\\\/]/, '');    //extract template filename to use as download file name
   console.log(`start gen. template: ${template}, filename: ${filename}`)
-  if (template.startsWith(/http.[s]:\/\//)) {
-    filename = '/data/' + template.substring(template.lastIndexOf('/') + 1)
-    await downloadFile(template, filename)
+  let templateFilePath = template
+  if (template.startsWith('http')) {
+    filename = template.substring(template.lastIndexOf('/') + 1)
+    templateFilePath = './data/' + filename
+    await downloadFile(templateFilePath, filename)
   }
   data = JSON.parse(request.body.json);
   options = JSON.parse(request.body.options);
@@ -43,7 +48,7 @@ app.post('/', async function(request, response) {
     filename = filename+'.'+options.convertTo;
   }
 
-  carbone.render(template, data, options, function(err, result){
+  carbone.render(templateFilePath, data, options, function(err, result){
     if (err) {
       return console.log(err);
     }
@@ -55,22 +60,18 @@ app.post('/', async function(request, response) {
 });
 
 async function downloadFile(url, destinationPath) {
+  console.log('downloadFile', url, destinationPath)
   try {
     // 发送GET请求
-    const response = await fetch(url);
-    if (!response.ok ) {
+    const response = await axios({
+      method: "get",
+      url,
+      responseType: "stream"
+  });
+    if (response.status !== 200) {
       throw new Error(`HTTP error! Status: ${response.status }`);
     }
-    // 获取响应体作为流
-    const body = response.body ;
-    // 将流转换为Node.js 的fs流
-    const reader = body.getReader ();
-    const writer = fs.createWriteStream (destinationPath);
-    for (;;) {
-      const { done, value } = await reader.read ();
-      if (done) break;
-      writer.write (value);
-    }
+    response.data.pipe(fs.createWriteStream ('./data/' + destinationPath));
     console.log ('File downloaded and saved');
   } catch (error) {
     console.error ('An error occurred:', error);
