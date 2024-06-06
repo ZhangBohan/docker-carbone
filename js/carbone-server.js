@@ -71,7 +71,7 @@ async function downloadFile(url, destinationPath) {
     if (response.status !== 200) {
       throw new Error(`HTTP error! Status: ${response.status }`);
     }
-    response.data.pipe(fs.createWriteStream ('./data/' + destinationPath));
+    response.data.pipe(fs.createWriteStream (destinationPath));
     console.log ('File downloaded and saved');
   } catch (error) {
     console.error ('An error occurred:', error);
